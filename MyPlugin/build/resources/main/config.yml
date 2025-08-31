@@ -1,0 +1,39 @@
+storage:
+type: mysql
+host: 127.0.0.1
+port: 3306
+database: security
+user: twofa
+password: "change_me"
+pool:
+maximumPoolSize: 10
+
+
+security:
+mode: totp_telegram     # totp | telegram | totp_telegram
+secret_encryption_key_env: TWOFA_MASTER_KEY # имя переменной окружения с Base64 ключом (32 байта для AES-256)
+secret_encryption_key_b64: "" # (опционально) сам Base64-ключ прямо в конфиге, если ENV недоступен
+totp:
+issuer: "BlockEra"
+digits: 6
+period_seconds: 30
+window_steps: 1 # принимать коды со сдвигом -1..+1 шага
+policy:
+required_permission: blockera.twofa.required # кому 2FA обязателен
+
+
+session:
+expire_minutes: 120
+
+
+ui:
+prefix: "<#55FFAA>[2FA]</#55FFAA> "
+allow_commands_when_pending: ["/2fa", "/help"]
+qr_link_template: "https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=%s"
+
+telegram:
+  # просто тексты/ссылки — токен бота тут не нужен (он остаётся в отдельном сервисе)
+  bot_username: "BlockEra_BOT"
+  help_link: "https://t.me/BlockEra_BOT"
+  challenge_ttl_seconds: 180
+  poll_interval_ticks: 40  # как часто плагин проверяет БД (каждые 2 сек при 20 тиках/сек)
