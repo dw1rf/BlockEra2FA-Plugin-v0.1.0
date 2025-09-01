@@ -10,7 +10,9 @@ maximumPoolSize: 10
 
 
 security:
-mode: totp_telegram     # totp | telegram | totp_telegram
+  mode: telegram        # либо: telegram
+
+
 secret_encryption_key_env: TWOFA_MASTER_KEY # имя переменной окружения с Base64 ключом (32 байта для AES-256)
 secret_encryption_key_b64: "" # (опционально) сам Base64-ключ прямо в конфиге, если ENV недоступен
 totp:
