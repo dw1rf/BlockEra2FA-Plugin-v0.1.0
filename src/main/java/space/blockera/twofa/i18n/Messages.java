@@ -43,16 +43,26 @@ public class Messages {
                 "setup-created","qr-link","otpauth-copy","after-setup",
                 "usage-confirm","need-setup-first","confirm-ok","confirm-bad",
                 "status","usage-disable","not-setup","disabled","disable-bad",
-                "unknown",
-                // ↓ добавим дефолты для привязки Telegram
-                "tg.link.begin"
+                "unknown","pending.prompt","blocked.command","blocked.chat",
+                "tg.link.begin","tg.status.linked","tg.status.notLinked","tg.unlinked",
+                "tg.freeze.pending","tg.freeze.unlocked","tg.freeze.kick-pending","tg.freeze.kick-denied"
         };
     }
 
     private Object defaults(String key) {
         return switch (key) {
             case "prefix" -> "&a[2FA]&r ";
-            case "help" -> "%s | %s | %s | %s | %s";
+            case "help" -> List.of(
+                    "{prefix}&fДоступные команды:",
+                    "{prefix}&7/2fa {setup} &f- начать настройку",
+                    "{prefix}&7/2fa {confirm} <код> &f- подтвердить код",
+                    "{prefix}&7/2fa {status} &f- показать состояние",
+                    "{prefix}&7/2fa {disable} <код> &f- отключить 2FA",
+                    "{prefix}&7/2fa {telegram_link} &f- привязать Telegram",
+                    "{prefix}&7/2fa {telegram_status} &f- статус Telegram",
+                    "{prefix}&7/2fa {telegram_unlink} &f- отвязать Telegram",
+                    "{prefix}&7/2fa {reload} &f- перезагрузить конфиг"
+            );
             case "no-perm" -> "&cНедостаточно прав.";
             case "reloaded" -> "&aКонфиг и подключения перезагружены.";
             case "only-ingame" -> "&cКоманда доступна только из игры.";
@@ -70,12 +80,22 @@ public class Messages {
             case "disabled" -> "&a2FA отключена.";
             case "disable-bad" -> "&cКод не подошёл, отключение отменено.";
             case "unknown" -> "&cНеизвестная подкоманда.";
+            case "pending.prompt" -> "{prefix}&fВведите &a{confirm}&f из приложения.";
+            case "blocked.command" -> "{prefix}&cДоступ запрещён до ввода кода. Используйте &a{confirm}";
+            case "blocked.chat" -> "{prefix}&cЧат недоступен до подтверждения 2FA.";
             case "tg.link.begin" -> List.of(
                     "{prefix}Начинаем привязку Telegram.",
                     "{prefix}Открой бота {bot} и отправь ему код: &e{token}",
                     "{prefix}Ссылка: &b{url}",
-                    "{prefix}После подтверждения ботом — вернись и проверь /2fa tgstatus"
+                    "{prefix}После подтверждения ботом — вернись и проверь /2fa {telegram_status}"
             );
+            case "tg.status.linked" -> "{prefix}&aПривязан к {tg}";
+            case "tg.status.notLinked" -> "{prefix}&7Telegram ещё не привязан.";
+            case "tg.unlinked" -> "{prefix}&eПривязка Telegram удалена.";
+            case "tg.freeze.pending" -> "{prefix}&cПодтвердите вход в Telegram-боте, движение временно заблокировано.";
+            case "tg.freeze.unlocked" -> "{prefix}&aВход подтверждён. Удачной игры!";
+            case "tg.freeze.kick-pending" -> "{prefix}&cНе подтвержден вход в Telegram.";
+            case "tg.freeze.kick-denied" -> "{prefix}&cВход отклонён через Telegram.";
             default -> "&c<missing message>";
         };
     }

@@ -32,6 +32,14 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
     private Messages messages;
     private TelegramLinkRepository tgLinks;
     private ChallengeRepository challenges;
+    private List<String> setupAliases = List.of("setup");
+    private List<String> confirmAliases = List.of("confirm");
+    private List<String> statusAliases = List.of("status");
+    private List<String> disableAliases = List.of("disable");
+    private List<String> reloadAliases = List.of("reload");
+    private List<String> tgLinkAliases = List.of("link");
+    private List<String> tgStatusAliases = List.of("tgstatus");
+    private List<String> tgUnlinkAliases = List.of("unlinktelegram");
 
     public TwoFACommand(Plugin plugin,
                         UserRepository repo,
@@ -49,6 +57,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
         this.messages = msg;
         this.tgLinks = tgLinks;
         this.challenges = challenges;
+        reloadSettings();
     }
 
     public void rewire(UserRepository repo,
@@ -67,6 +76,56 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
         this.challenges = challenges;
     }
 
+    public void reloadSettings() {
+        this.setupAliases = readAliases("commands.setup", "setup");
+        this.confirmAliases = readAliases("commands.confirm", "confirm");
+        this.statusAliases = readAliases("commands.status", "status");
+        this.disableAliases = readAliases("commands.disable", "disable");
+        this.reloadAliases = readAliases("commands.reload", "reload");
+        this.tgLinkAliases = readAliases("commands.telegram_link", "link");
+        this.tgStatusAliases = readAliases("commands.telegram_status", "tgstatus");
+        this.tgUnlinkAliases = readAliases("commands.telegram_unlink", "unlinktelegram");
+    }
+
+    private List<String> readAliases(String path, String fallback) {
+        List<String> raw = plugin.getConfig().getStringList(path);
+        if (raw == null || raw.isEmpty()) {
+            return List.of(fallback);
+        }
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        for (String entry : raw) {
+            if (entry == null) continue;
+            String trimmed = entry.trim();
+            if (trimmed.isEmpty()) continue;
+            set.add(trimmed.toLowerCase(Locale.ROOT));
+        }
+        if (set.isEmpty()) {
+            set.add(fallback);
+        }
+        return List.copyOf(set);
+    }
+
+    private String primary(List<String> aliases, String fallback) {
+        return aliases.isEmpty() ? fallback : aliases.get(0);
+    }
+
+    private Map<String, String> helpPlaceholders() {
+        return Map.of(
+                "setup", primary(setupAliases, "setup"),
+                "confirm", primary(confirmAliases, "confirm"),
+                "status", primary(statusAliases, "status"),
+                "disable", primary(disableAliases, "disable"),
+                "reload", primary(reloadAliases, "reload"),
+                "telegram_link", primary(tgLinkAliases, "link"),
+                "telegram_status", primary(tgStatusAliases, "tgstatus"),
+                "telegram_unlink", primary(tgUnlinkAliases, "unlinktelegram")
+        );
+    }
+
+    private Map<String, String> basePlaceholders() {
+        return new HashMap<>(helpPlaceholders());
+    }
+
     private static String genToken16() {
         // 16-символьный верхний регистр, как ожидает твой бот
         return UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase(Locale.ROOT);
@@ -77,17 +136,13 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
         String prefix = messages.msg("prefix");
 
         if (args.length == 0) {
-            sender.sendMessage(messages.fmt("help",
-                    "/2fa setup",
-                    "/2fa confirm <код>",
-                    "/2fa status",
-                    "/2fa disable <код>",
-                    "/2fa reload"));
+            messages.send(sender, "help", helpPlaceholders());
             return true;
         }
 
-        switch (args[0].toLowerCase(Locale.ROOT)) {
-            case "reload": {
+        String sub = args[0].toLowerCase(Locale.ROOT);
+
+        if (reloadAliases.contains(sub)) {
                 if (!sender.hasPermission("blockera.twofa.admin")) {
                     sender.sendMessage(messages.msg("no-perm"));
                     return true;
@@ -105,11 +160,10 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                     }
                 }
                 return true;
-            }
+        }
 
-            // ===================== TELEGRAM LINK =====================
-            case "linktelegram":
-            case "link": {
+        // ===================== TELEGRAM LINK =====================
+        if (tgLinkAliases.contains(sub)) {
                 if (!(sender instanceof Player p)) {
                     sender.sendMessage(messages.msg("only-ingame"));
                     return true;
@@ -117,7 +171,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
 
                 if (tgLinks.findByPlayer(p.getUniqueId()).isPresent()) {
                     // уже привязан
-                    messages.send(p, "tg.alreadyLinked", Map.of());
+                    messages.send(p, "tg.alreadyLinked", helpPlaceholders());
                     return true;
                 }
 
@@ -135,11 +189,11 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                 String url = String.format(Locale.ROOT, linkTpl, bot, token);
 
                 // выводим готовое сообщение через Messages (подстановка {prefix}/{bot}/{token}/{url})
-                messages.send(p, "tg.link.begin", Map.of(
-                        "bot", "@" + bot,
-                        "token", token,
-                        "url", url
-                ));
+                Map<String, String> vars = basePlaceholders();
+                vars.put("bot", "@" + bot);
+                vars.put("token", token);
+                vars.put("url", url);
+                messages.send(p, "tg.link.begin", vars);
 
                 // дополнительная кликабельная строка (приятная мелочь)
                 p.sendMessage(Component.text(" ")
@@ -150,30 +204,30 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                 );
 
                 return true;
-            }
+        }
 
-            case "tgstatus": {
+        if (tgStatusAliases.contains(sub)) {
                 if (!(sender instanceof Player p)) { sender.sendMessage(messages.msg("only-ingame")); return true; }
                 var link = tgLinks.findByPlayer(p.getUniqueId());
                 if (link.isPresent()) {
-                    // именованный плейсхолдер {tg} через messages.send
-                    messages.send(p, "tg.status.linked",
-                            Map.of("tg", "@" + link.get().telegramUsername()));
+                    Map<String, String> vars = basePlaceholders();
+                    vars.put("tg", "@" + link.get().telegramUsername());
+                    messages.send(p, "tg.status.linked", vars);
                 } else {
-                    messages.send(p, "tg.status.notLinked", Map.of());
+                    messages.send(p, "tg.status.notLinked", helpPlaceholders());
                 }
                 return true;
-            }
+        }
 
-            case "unlinktelegram": {
+        if (tgUnlinkAliases.contains(sub)) {
                 if (!(sender instanceof Player p)) { sender.sendMessage(messages.msg("only-ingame")); return true; }
                 tgLinks.deleteByPlayer(p.getUniqueId());
-                messages.send(p, "tg.unlinked", Map.of());
+                messages.send(p, "tg.unlinked", helpPlaceholders());
                 return true;
-            }
+        }
 
-            // ===================== TOTP FLOW =====================
-            case "setup": {
+        // ===================== TOTP FLOW =====================
+        if (setupAliases.contains(sub)) {
                 if (!(sender instanceof Player p)) { sender.sendMessage(messages.msg("only-ingame")); return true; }
                 String base32 = totp.generateBase32Secret();
                 String otpauth = totp.buildOtpAuthUri(p.getName(), base32);
@@ -191,9 +245,9 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                 p.sendMessage(messages.msg("after-setup"));
                 sessions.markPending(p.getUniqueId());
                 return true;
-            }
+        }
 
-            case "confirm": {
+        if (confirmAliases.contains(sub)) {
                 if (!(sender instanceof Player p)) { sender.sendMessage(messages.msg("only-ingame")); return true; }
                 if (args.length < 2) { p.sendMessage(messages.msg("usage-confirm")); return true; }
                 var enc = repo.getSecret(p.getUniqueId());
@@ -206,27 +260,28 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         Player pl = Bukkit.getPlayer(p.getUniqueId());
                         if (pl != null) {
-                            pl.setWalkSpeed(0.2f);
-                            pl.setFlySpeed(0.1f);
-                            pl.setInvulnerable(false);
-                            pl.setCollidable(true);
+                            var cfg = plugin.getConfig();
+                            pl.setWalkSpeed((float) cfg.getDouble("ui.unlock.walk_speed", 0.2));
+                            pl.setFlySpeed((float) cfg.getDouble("ui.unlock.fly_speed", 0.1));
+                            pl.setInvulnerable(cfg.getBoolean("ui.unlock.invulnerable", false));
+                            pl.setCollidable(cfg.getBoolean("ui.unlock.collidable", true));
                         }
                     });
                 } else {
                     p.sendMessage(messages.msg("confirm-bad"));
                 }
                 return true;
-            }
+        }
 
-            case "status": {
+        if (statusAliases.contains(sub)) {
                 if (!(sender instanceof Player p)) { sender.sendMessage(messages.msg("only-ingame")); return true; }
                 boolean enabled = repo.isEnabled(p.getUniqueId());
                 boolean verified = sessions.isVerified(p.getUniqueId());
                 p.sendMessage(messages.fmt("status", enabled, verified));
                 return true;
-            }
+        }
 
-            case "disable": {
+        if (disableAliases.contains(sub)) {
                 if (!(sender instanceof Player p)) { sender.sendMessage(messages.msg("only-ingame")); return true; }
                 if (args.length < 2) { p.sendMessage(messages.msg("usage-disable")); return true; }
                 var enc = repo.getSecret(p.getUniqueId());
@@ -239,18 +294,25 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                     p.sendMessage(messages.msg("disable-bad"));
                 }
                 return true;
-            }
-
-            default:
-                sender.sendMessage(messages.msg("unknown"));
-                return true;
         }
+
+        sender.sendMessage(messages.msg("unknown"));
+        return true;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Arrays.asList("setup","confirm","status","disable","reload","linktelegram","link","tgstatus","unlinktelegram");
+            LinkedHashSet<String> suggestions = new LinkedHashSet<>();
+            suggestions.addAll(setupAliases);
+            suggestions.addAll(confirmAliases);
+            suggestions.addAll(statusAliases);
+            suggestions.addAll(disableAliases);
+            suggestions.addAll(reloadAliases);
+            suggestions.addAll(tgLinkAliases);
+            suggestions.addAll(tgStatusAliases);
+            suggestions.addAll(tgUnlinkAliases);
+            return new ArrayList<>(suggestions);
         }
         return Collections.emptyList();
     }

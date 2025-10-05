@@ -39,6 +39,8 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
     private ChallengeRepository challenges;
     private TelegramSessionRepository telegramSessions;
     private TwoFAMode mode;
+    private SecurityListeners securityListeners;
+    private SecurityFreezeListener securityFreezeListener;
 
 
     @Override
@@ -59,14 +61,10 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
         pc.setTabCompleter(command);
 
         // слушатели безопасности
-        Bukkit.getPluginManager().registerEvents(
-                new SecurityListeners(this, userRepository, sessionService),
-                this
-        );
-        Bukkit.getPluginManager().registerEvents(
-                new SecurityFreezeListener(this, tgLinks, telegramSessions),
-                this
-        );
+        this.securityListeners = new SecurityListeners(this, userRepository, sessionService, messages);
+        Bukkit.getPluginManager().registerEvents(securityListeners, this);
+        this.securityFreezeListener = new SecurityFreezeListener(this, tgLinks, telegramSessions, messages);
+        Bukkit.getPluginManager().registerEvents(securityFreezeListener, this);
 
         // онлайн: апдейт таблицы + обработчик очереди logout
         OnlineRepository onlineRepo = new OnlineRepository(getDataSource());
@@ -144,6 +142,18 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
                     tgLinks,
                     challenges
             );
+        }
+        this.command.reloadSettings();
+
+        if (this.securityListeners != null) {
+            this.securityListeners.rewire(userRepository, sessionService);
+            this.securityListeners.setMessages(messages);
+            this.securityListeners.reloadSettings();
+        }
+        if (this.securityFreezeListener != null) {
+            this.securityFreezeListener.rewire(tgLinks, telegramSessions);
+            this.securityFreezeListener.setMessages(messages);
+            this.securityFreezeListener.reloadSettings();
         }
 
         // создать таблицы онлайна/очереди, если их ещё нет

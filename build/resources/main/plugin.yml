@@ -1,6 +1,6 @@
 name: BlockEraTwoFA
 main: space.blockera.twofa.BlockEraTwoFAPlugin
-version: "0.1.0"
+version: "0.1.1"
 description: "TOTP 2FA для Paper 1.21.x"
 api-version: "1.21"
 authors: ["BlockEra"]

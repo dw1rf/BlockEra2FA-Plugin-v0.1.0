@@ -1,7 +1,6 @@
 package space.blockera.twofa.listeners;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.player.*;
@@ -14,40 +13,73 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import space.blockera.twofa.storage.TelegramLinkRepository;
 import space.blockera.twofa.storage.TelegramSessionRepository;
+import space.blockera.twofa.i18n.Messages;
 
 import java.time.Instant;
 import java.util.*;
 
 public class SecurityFreezeListener implements Listener {
     private final Plugin plugin;
-    private final TelegramLinkRepository links;
-    private final TelegramSessionRepository sessions;
+    private TelegramLinkRepository links;
+    private TelegramSessionRepository sessions;
     private final Set<UUID> frozen = new HashSet<>();
+    private Messages messages;
+    private float freezeWalkSpeed;
+    private float freezeFlySpeed;
+    private boolean freezeInvulnerable;
+    private boolean freezeCollidable;
+    private float unlockWalkSpeed;
+    private float unlockFlySpeed;
+    private boolean unlockInvulnerable;
+    private boolean unlockCollidable;
+    private String kickPendingMessage;
+    private String kickDeniedMessage;
 
-    public SecurityFreezeListener(Plugin plugin, TelegramLinkRepository links, TelegramSessionRepository sessions) {
+    public SecurityFreezeListener(Plugin plugin, TelegramLinkRepository links, TelegramSessionRepository sessions, Messages messages) {
         this.plugin = plugin;
+        this.links = links;
+        this.sessions = sessions;
+        this.messages = messages;
+        reloadSettings();
+    }
+
+    public void setMessages(Messages messages) { this.messages = messages; }
+
+    public void rewire(TelegramLinkRepository links, TelegramSessionRepository sessions) {
         this.links = links;
         this.sessions = sessions;
     }
 
+    public void reloadSettings() {
+        this.freezeWalkSpeed = (float) plugin.getConfig().getDouble("telegram.freeze.walk_speed", 0.0);
+        this.freezeFlySpeed = (float) plugin.getConfig().getDouble("telegram.freeze.fly_speed", 0.0);
+        this.freezeInvulnerable = plugin.getConfig().getBoolean("telegram.freeze.invulnerable", true);
+        this.freezeCollidable = plugin.getConfig().getBoolean("telegram.freeze.collidable", false);
+        this.unlockWalkSpeed = (float) plugin.getConfig().getDouble("telegram.freeze.unlock.walk_speed", 0.2);
+        this.unlockFlySpeed = (float) plugin.getConfig().getDouble("telegram.freeze.unlock.fly_speed", 0.1);
+        this.unlockInvulnerable = plugin.getConfig().getBoolean("telegram.freeze.unlock.invulnerable", false);
+        this.unlockCollidable = plugin.getConfig().getBoolean("telegram.freeze.unlock.collidable", true);
+        this.kickPendingMessage = messages.msg("tg.freeze.kick-pending");
+        this.kickDeniedMessage = messages.msg("tg.freeze.kick-denied");
+    }
+
     private void applyFreeze(Player p) {
         frozen.add(p.getUniqueId());
-        p.setWalkSpeed((float) plugin.getConfig().getDouble("telegram.freeze.walk_speed", 0.0));
-        p.setFlySpeed((float) plugin.getConfig().getDouble("telegram.freeze.fly_speed", 0.0));
-        p.setInvulnerable(plugin.getConfig().getBoolean("telegram.freeze.invulnerable", true));
-        // ВАЖНО: без инверсии — читаем как есть (по умолчанию false ⇒ не сталкивается)
-        p.setCollidable(plugin.getConfig().getBoolean("telegram.freeze.collidable", false));
-        p.sendMessage(ChatColor.RED + "Подтвердите вход в Telegram-боте, движение временно заблокировано.");
+        p.setWalkSpeed(freezeWalkSpeed);
+        p.setFlySpeed(freezeFlySpeed);
+        p.setInvulnerable(freezeInvulnerable);
+        p.setCollidable(freezeCollidable);
+        messages.send(p, "tg.freeze.pending", Map.of());
     }
 
     private void removeFreeze(Player p) {
         frozen.remove(p.getUniqueId());
         // вернуть дефолты
-        p.setWalkSpeed(0.2f);
-        p.setFlySpeed(0.1f);
-        p.setInvulnerable(false);
-        p.setCollidable(true);
-        p.sendMessage(ChatColor.GREEN + "Вход подтверждён. Удачной игры!");
+        p.setWalkSpeed(unlockWalkSpeed);
+        p.setFlySpeed(unlockFlySpeed);
+        p.setInvulnerable(unlockInvulnerable);
+        p.setCollidable(unlockCollidable);
+        messages.send(p, "tg.freeze.unlocked", Map.of());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -76,7 +108,7 @@ public class SecurityFreezeListener implements Listener {
         // плановый кик
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (frozen.contains(p.getUniqueId())) {
-                p.kickPlayer(ChatColor.RED + "Не подтвержден вход в Telegram.");
+                p.kickPlayer(kickPendingMessage);
             }
         }, kickAfter * 20L);
 
@@ -87,7 +119,7 @@ public class SecurityFreezeListener implements Listener {
                 if (ok.isPresent()) {
                     cancel();
                     if (ok.get()) removeFreeze(p);
-                    else p.kickPlayer(ChatColor.RED + "Вход отклонён через Telegram.");
+                    else p.kickPlayer(kickDeniedMessage);
                     return;
                 }
                 if (!p.isOnline()) cancel();
