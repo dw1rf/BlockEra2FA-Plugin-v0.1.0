@@ -1,45 +1,103 @@
+# =============================
+# 💾 STORAGE
+# -----------------------------
+# Настройки подключения к БД. Используется HikariCP.
+# =============================
 storage:
-type: mysql
-host: 127.0.0.1
-port: 3306
-database: security
-user: twofa
-password: "change_me"
-pool:
-maximumPoolSize: 10
+  type: mysql
+  host: 127.0.0.1
+  port: 3306
+  database: security
+  user: twofa
+  password: "change_me"
+  pool:
+    maximumPoolSize: 10
 
-
+# =============================
+# 🔐 SECURITY CORE
+# -----------------------------
+# Параметры 2FA и политики для игроков.
+# =============================
 security:
-  mode: telegram        # либо: telegram
+  mode: totp_telegram     # totp | telegram | totp_telegram
+  secret_encryption_key_env: TWOFA_MASTER_KEY # имя переменной окружения с Base64 ключом (32 байта для AES-256)
+  secret_encryption_key_b64: "" # (опционально) сам Base64-ключ прямо в конфиге, если ENV недоступен
+  totp:
+    issuer: "BlockEra"
+    digits: 6
+    period_seconds: 30
+    window_steps: 1 # принимать коды со сдвигом -1..+1 шага
+  policy:
+    required_permission: blockera.twofa.required # у кого 2FA обязателен
+    cooldown:
+      enabled: true # выключить, если нужна старая логика "каждый вход"
+      default:
+        minutes: 1440 # сколько помнить проверку (24 часа)
+        per_ip: true # хранить отдельный кулдаун для каждого IP
+      groups:
+        # ▸ Игроки с этим пермишеном проходят 2FA на каждом входе (0 минут).
+        - permission: blockera.twofa.cooldown.always
+          force: true
+        # ▸ Пример: для обычных игроков задать другой пермишен и длительность.
+        - permission: blockera.twofa.cooldown.default
+          minutes: 4320   # три дня
+          per_ip: true
 
-
-secret_encryption_key_env: TWOFA_MASTER_KEY # имя переменной окружения с Base64 ключом (32 байта для AES-256)
-secret_encryption_key_b64: "" # (опционально) сам Base64-ключ прямо в конфиге, если ENV недоступен
-totp:
-issuer: "BlockEra"
-digits: 6
-period_seconds: 30
-window_steps: 1 # принимать коды со сдвигом -1..+1 шага
-policy:
-required_permission: blockera.twofa.required # кому 2FA обязателен
-
-
+# =============================
+# 🕒 SESSION CACHE
+# -----------------------------
+# Сколько минут после подтверждения игрок не будет блокироваться в текущей сессии.
+# =============================
 session:
-expire_minutes: 120
+  expire_minutes: 120
 
-
+# =============================
+# 🎨 UI & ПОВЕДЕНИЕ БЛОКИРОВКИ
+# -----------------------------
+# Здесь управляем сообщениями и ограничениями во время ожидания 2FA.
+# =============================
 ui:
-prefix: "<#55FFAA>[2FA]</#55FFAA> "
-allow_commands_when_pending: ["/2fa", "/help"]
-qr_link_template: "https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=%s"
+  prefix: "&b&l[2FA] &r"
+  allow_commands_when_pending:
+    - "/2fa"
+    - "/help"
+  qr_link_template: "https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=%s"
+  freeze:
+    walk_speed: 0.0
+    fly_speed: 0.0
+    invulnerable: true
+    collidable: false
+  unlock:
+    walk_speed: 0.2
+    fly_speed: 0.1
+    invulnerable: false
+    collidable: true
 
+# =============================
+# 🛠️ COMMANDS
+# -----------------------------
+# Алиасы команд, если нужно поменять локализацию.
+# =============================
+commands:
+  setup: ["setup"]
+  confirm: ["confirm"]
+  status: ["status"]
+  disable: ["disable"]
+  reload: ["reload"]
+  telegram_link: ["link"]
+  telegram_status: ["tgstatus"]
+  telegram_unlink: ["unlinktelegram"]
+
+# =============================
+# 🤖 TELEGRAM AUTH
+# -----------------------------
+# Настройки интеграции с ботом и поведения телеграм-аутентификации.
+# =============================
 telegram:
-  # просто тексты/ссылки — токен бота тут не нужен (он остаётся в отдельном сервисе)
   bot_username: "BlockEra_BOT"
   help_link: "https://t.me/BlockEra_BOT"
   challenge_ttl_seconds: 180
   poll_interval_ticks: 40  # как часто плагин проверяет БД (каждые 2 сек при 20 тиках/сек)
-
   auth_on_join: true
   kick_after_seconds: 120
   cooldown_minutes: 1440
@@ -50,3 +108,8 @@ telegram:
     fly_speed: 0.0
     invulnerable: true
     collidable: false
+    unlock:
+      walk_speed: 0.2
+      fly_speed: 0.1
+      invulnerable: false
+      collidable: true

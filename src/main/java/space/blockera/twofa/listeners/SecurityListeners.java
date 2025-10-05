@@ -88,8 +88,19 @@ public class SecurityListeners implements Listener {
         UUID u = p.getUniqueId();
         boolean must = p.hasPermission(requiredPerm);
         boolean enabled = repo.isEnabled(u);
-        if (must && enabled && !sessions.isVerified(u)) {
-            sessions.markPending(u);
+        if (!must || !enabled) {
+            return;
+        }
+
+        var rule = sessions.resolveRule(p);
+        String ip = SessionService.currentIp(p);
+        if (sessions.isWithinCooldown(u, ip, rule)) {
+            sessions.markTrusted(u);
+            return;
+        }
+
+        if (!sessions.isVerified(u)) {
+            sessions.markPending(u, rule, ip);
             freeze(p);
             messages.send(p, "pending.prompt", Map.of("confirm", confirmPlaceholder));
         }

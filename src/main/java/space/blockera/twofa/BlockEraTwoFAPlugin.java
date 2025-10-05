@@ -119,7 +119,7 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
 
         // сервисы
         this.totpService = new TotpService(cfg);
-        this.sessionService = new SessionService(cfg.getInt("session.expire_minutes", 120));
+        this.sessionService = new SessionService(cfg);
 
         if (this.command == null) {
             this.command = new TwoFACommand(

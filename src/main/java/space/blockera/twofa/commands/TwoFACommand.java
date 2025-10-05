@@ -255,7 +255,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                 String base32 = crypto.reveal(enc.get());
                 if (totp.verifyCode(base32, args[1])) {
                     repo.setEnabled(p.getUniqueId(), true);
-                    sessions.markVerified(p.getUniqueId());
+                    sessions.markVerified(p.getUniqueId(), SessionService.currentIp(p));
                     p.sendMessage(messages.msg("confirm-ok"));
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         Player pl = Bukkit.getPlayer(p.getUniqueId());
