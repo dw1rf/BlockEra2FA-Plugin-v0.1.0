@@ -52,10 +52,7 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
     private TwoFAMode mode;
     private SecurityListeners securityListeners;
     private SecurityFreezeListener securityFreezeListener;
-<<<<<<< ours
-=======
     private TrustedDeviceService trustedDeviceService;
->>>>>>> theirs
     private Metrics metrics;
     private int activeMetricsId = -1;
 

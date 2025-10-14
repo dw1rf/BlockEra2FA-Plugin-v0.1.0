@@ -41,11 +41,7 @@ public class Messages {
         return new String[] {
                 "prefix","help","no-perm","reloaded","only-ingame",
                 "setup-created","qr-link","otpauth-copy","after-setup",
-<<<<<<< ours
-                "usage-confirm","need-setup-first","confirm-ok","confirm-bad",
-=======
                 "usage-confirm","need-setup-first","confirm-ok","confirm-bad","trusted.remembered",
->>>>>>> theirs
                 "status","usage-disable","usage-force-disable","not-setup",
                 "disabled","disable-bad","force-disabled","force-disabled-player",
                 "force-disable-not-found",

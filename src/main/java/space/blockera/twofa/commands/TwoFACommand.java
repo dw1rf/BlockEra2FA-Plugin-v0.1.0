@@ -335,12 +335,9 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
 
                 repo.upsertSecret(target.getUniqueId(), null, false);
                 sessions.clear(target.getUniqueId());
-<<<<<<< ours
-=======
                 if (trustedDevices != null) {
                     trustedDevices.forget(target.getUniqueId());
                 }
->>>>>>> theirs
 
                 String resolvedName = target.getName() != null ? target.getName() : targetName;
                 Map<String, String> vars = basePlaceholders();
