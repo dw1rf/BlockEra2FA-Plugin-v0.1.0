@@ -3,11 +3,12 @@ main: space.blockera.twofa.BlockEraTwoFAPlugin
 version: "0.1.1"
 description: "TOTP 2FA для Paper 1.21.x"
 api-version: "1.21"
+folia-supported: false
 authors: ["BlockEra"]
 commands:
   2fa:
     description: "Управление двухфакторной аутентификацией"
-    usage: "/2fa <setup|confirm|status|disable|reload> [код]"
+    usage: "/2fa <setup|confirm|status|disable|force-disable|reload> [параметры]"
     permission: blockera.twofa.use
 permissions:
   blockera.twofa.use:

@@ -6,6 +6,7 @@ help:
   - "{prefix}&7/2fa {confirm} <код> &f- подтвердить код"
   - "{prefix}&7/2fa {status} &f- показать состояние"
   - "{prefix}&7/2fa {disable} <код> &f- отключить 2FA"
+  - "{prefix}&7/2fa {force_disable} <ник> &f- отключить 2FA игроку (админ)"
   - "{prefix}&7/2fa {telegram_link} &f- привязать Telegram"
   - "{prefix}&7/2fa {telegram_status} &f- статус Telegram"
   - "{prefix}&7/2fa {telegram_unlink} &f- отвязать Telegram"
@@ -26,12 +27,19 @@ need-setup-first: "{prefix}&cСначала выполните /2fa setup."
 confirm-ok: "{prefix}&aУспех! 2FA подтверждена."
 confirm-bad: "{prefix}&cНеверный код. Проверьте время на устройстве."
 
+trusted:
+  remembered: "{prefix}&7Устройство запомнено на {days} дн."
+
 status: "{prefix}&fВключено: &a%s&f, подтверждено в сессии: &a%s"
 
 usage-disable: "{prefix}&7Для отключения: &f/2fa disable <код>"
+usage-force-disable: "{prefix}&7Для отключения игроку: &f/2fa {force_disable} <ник>"
 not-setup: "{prefix}&c2FA ещё не настроена."
 disabled: "{prefix}&e2FA отключена."
 disable-bad: "{prefix}&cКод не подошёл, отключение отменено."
+force-disabled: "{prefix}&a2FA отключена для {player}."
+force-disabled-player: "{prefix}&cАдминистратор отключил вашу 2FA. Настройте заново через /2fa {setup}."
+force-disable-not-found: "{prefix}&cИгрок {player} не найден или ни разу не заходил."
 
 pending:
   prompt: "{prefix}&fВведите &a{confirm}&f из приложения."
