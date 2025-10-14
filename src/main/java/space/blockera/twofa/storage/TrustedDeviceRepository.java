@@ -19,6 +19,7 @@ public class TrustedDeviceRepository {
     public TrustedDeviceRepository(DataSource dataSource, Logger log) {
         this.dataSource = dataSource;
         this.log = log;
+        initSchema();
     }
 
     public void initSchema() {

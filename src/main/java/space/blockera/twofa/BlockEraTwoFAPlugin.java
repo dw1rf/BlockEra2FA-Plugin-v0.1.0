@@ -109,12 +109,10 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
 
         // репозитории
         this.userRepository = new UserRepository(dataSource, getLogger());
-        this.userRepository.initSchema();
         this.tgLinks = new TelegramLinkRepository(dataSource, getLogger());
         this.challenges = new ChallengeRepository(dataSource, getLogger());
         this.telegramSessions = new TelegramSessionRepository(dataSource, getLogger());
         this.trustedDevicesRepository = new TrustedDeviceRepository(dataSource, getLogger());
-        this.trustedDevicesRepository.initSchema();
 
         // ключ шифрования: ENV -> config.yml -> PLAINTEXT
         String envVar = cfg.getString("security.secret_encryption_key_env", "TWOFA_MASTER_KEY");

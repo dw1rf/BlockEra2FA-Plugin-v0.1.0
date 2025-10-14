@@ -10,7 +10,11 @@ public class UserRepository {
     private final DataSource ds;
     private final Logger log;
 
-    public UserRepository(DataSource ds, Logger log) { this.ds = ds; this.log = log; }
+    public UserRepository(DataSource ds, Logger log) {
+        this.ds = ds;
+        this.log = log;
+        initSchema();
+    }
 
     public void initSchema() {
         String users = "CREATE TABLE IF NOT EXISTS twofa_users (" +
