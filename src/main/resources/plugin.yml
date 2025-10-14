@@ -7,7 +7,7 @@ authors: ["BlockEra"]
 commands:
   2fa:
     description: "Управление двухфакторной аутентификацией"
-    usage: "/2fa <setup|confirm|status|disable|reload> [код]"
+    usage: "/2fa <setup|confirm|status|disable|force-disable|reload> [параметры]"
     permission: blockera.twofa.use
 permissions:
   blockera.twofa.use:

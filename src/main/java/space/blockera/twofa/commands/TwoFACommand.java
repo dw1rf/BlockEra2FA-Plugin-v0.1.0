@@ -36,6 +36,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
     private List<String> confirmAliases = List.of("confirm");
     private List<String> statusAliases = List.of("status");
     private List<String> disableAliases = List.of("disable");
+    private List<String> forceDisableAliases = List.of("force-disable");
     private List<String> reloadAliases = List.of("reload");
     private List<String> tgLinkAliases = List.of("link");
     private List<String> tgStatusAliases = List.of("tgstatus");
@@ -81,6 +82,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
         this.confirmAliases = readAliases("commands.confirm", "confirm");
         this.statusAliases = readAliases("commands.status", "status");
         this.disableAliases = readAliases("commands.disable", "disable");
+        this.forceDisableAliases = readAliases("commands.force_disable", "force-disable");
         this.reloadAliases = readAliases("commands.reload", "reload");
         this.tgLinkAliases = readAliases("commands.telegram_link", "link");
         this.tgStatusAliases = readAliases("commands.telegram_status", "tgstatus");
@@ -115,6 +117,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                 "confirm", primary(confirmAliases, "confirm"),
                 "status", primary(statusAliases, "status"),
                 "disable", primary(disableAliases, "disable"),
+                "force_disable", primary(forceDisableAliases, "force-disable"),
                 "reload", primary(reloadAliases, "reload"),
                 "telegram_link", primary(tgLinkAliases, "link"),
                 "telegram_status", primary(tgStatusAliases, "tgstatus"),
@@ -296,6 +299,39 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                 return true;
         }
 
+        if (forceDisableAliases.contains(sub)) {
+                if (!sender.hasPermission("blockera.twofa.admin")) { sender.sendMessage(messages.msg("no-perm")); return true; }
+                if (args.length < 2) {
+                    messages.send(sender, "usage-force-disable", basePlaceholders());
+                    return true;
+                }
+                String targetName = args[1];
+                Player online = Bukkit.getPlayerExact(targetName);
+                var target = online != null ? online : Bukkit.getOfflinePlayer(targetName);
+                if (target == null || (!target.isOnline() && !target.hasPlayedBefore())) {
+                    Map<String, String> vars = basePlaceholders();
+                    vars.put("player", targetName);
+                    messages.send(sender, "force-disable-not-found", vars);
+                    return true;
+                }
+
+                repo.upsertSecret(target.getUniqueId(), null, false);
+                sessions.clear(target.getUniqueId());
+
+                String resolvedName = target.getName() != null ? target.getName() : targetName;
+                Map<String, String> vars = basePlaceholders();
+                vars.put("player", resolvedName);
+                messages.send(sender, "force-disabled", vars);
+
+                if (target.isOnline()) {
+                    Player player = target.getPlayer();
+                    if (player != null) {
+                        messages.send(player, "force-disabled-player", basePlaceholders());
+                    }
+                }
+                return true;
+        }
+
         sender.sendMessage(messages.msg("unknown"));
         return true;
     }
@@ -309,6 +345,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
             suggestions.addAll(statusAliases);
             suggestions.addAll(disableAliases);
             suggestions.addAll(reloadAliases);
+            suggestions.addAll(forceDisableAliases);
             suggestions.addAll(tgLinkAliases);
             suggestions.addAll(tgStatusAliases);
             suggestions.addAll(tgUnlinkAliases);

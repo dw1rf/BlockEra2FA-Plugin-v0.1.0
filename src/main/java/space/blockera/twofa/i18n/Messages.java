@@ -42,7 +42,9 @@ public class Messages {
                 "prefix","help","no-perm","reloaded","only-ingame",
                 "setup-created","qr-link","otpauth-copy","after-setup",
                 "usage-confirm","need-setup-first","confirm-ok","confirm-bad",
-                "status","usage-disable","not-setup","disabled","disable-bad",
+                "status","usage-disable","usage-force-disable","not-setup",
+                "disabled","disable-bad","force-disabled","force-disabled-player",
+                "force-disable-not-found",
                 "unknown","pending.prompt","blocked.command","blocked.chat",
                 "tg.link.begin","tg.status.linked","tg.status.notLinked","tg.unlinked",
                 "tg.freeze.pending","tg.freeze.unlocked","tg.freeze.kick-pending","tg.freeze.kick-denied"
@@ -58,6 +60,7 @@ public class Messages {
                     "{prefix}&7/2fa {confirm} <код> &f- подтвердить код",
                     "{prefix}&7/2fa {status} &f- показать состояние",
                     "{prefix}&7/2fa {disable} <код> &f- отключить 2FA",
+                    "{prefix}&7/2fa {force_disable} <ник> &f- отключить 2FA игроку (админ)",
                     "{prefix}&7/2fa {telegram_link} &f- привязать Telegram",
                     "{prefix}&7/2fa {telegram_status} &f- статус Telegram",
                     "{prefix}&7/2fa {telegram_unlink} &f- отвязать Telegram",
@@ -76,9 +79,13 @@ public class Messages {
             case "confirm-bad" -> "&cНеверный код. Проверьте время на устройстве.";
             case "status" -> "&7Включено: &f%s&7, подтверждено в сессии: &f%s";
             case "usage-disable" -> "&eДля отключения: /2fa disable <код>";
+            case "usage-force-disable" -> "{prefix}&7Для отключения игроку: &f/2fa {force_disable} <ник>";
             case "not-setup" -> "&e2FA не настроена.";
             case "disabled" -> "&a2FA отключена.";
             case "disable-bad" -> "&cКод не подошёл, отключение отменено.";
+            case "force-disabled" -> "{prefix}&a2FA отключена для {player}.";
+            case "force-disabled-player" -> "{prefix}&cАдминистратор отключил вашу 2FA. Настройте заново через /2fa {setup}.";
+            case "force-disable-not-found" -> "{prefix}&cИгрок {player} не найден или ни разу не заходил.";
             case "unknown" -> "&cНеизвестная подкоманда.";
             case "pending.prompt" -> "{prefix}&fВведите &a{confirm}&f из приложения.";
             case "blocked.command" -> "{prefix}&cДоступ запрещён до ввода кода. Используйте &a{confirm}";

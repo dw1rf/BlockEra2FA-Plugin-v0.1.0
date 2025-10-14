@@ -83,6 +83,7 @@ commands:
   confirm: ["confirm"]
   status: ["status"]
   disable: ["disable"]
+  force_disable: ["force-disable"]
   reload: ["reload"]
   telegram_link: ["link"]
   telegram_status: ["tgstatus"]
