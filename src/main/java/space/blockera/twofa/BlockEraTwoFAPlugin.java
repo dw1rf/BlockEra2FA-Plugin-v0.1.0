@@ -15,11 +15,13 @@ import space.blockera.twofa.listeners.SecurityListeners;
 import space.blockera.twofa.listeners.SecurityFreezeListener;
 import space.blockera.twofa.security.CryptoUtil;
 import space.blockera.twofa.session.SessionService;
+import space.blockera.twofa.session.TrustedDeviceService;
 import space.blockera.twofa.storage.ChallengeRepository;
 import space.blockera.twofa.storage.DataSourceFactory;
 import space.blockera.twofa.storage.TelegramLinkRepository;
 import space.blockera.twofa.storage.TelegramSessionRepository;
 import space.blockera.twofa.storage.UserRepository;
+import space.blockera.twofa.storage.TrustedDeviceRepository;
 import space.blockera.twofa.totp.TotpService;
 
 // онлайн
@@ -46,9 +48,14 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
     private TelegramLinkRepository tgLinks;
     private ChallengeRepository challenges;
     private TelegramSessionRepository telegramSessions;
+    private TrustedDeviceRepository trustedDevicesRepository;
     private TwoFAMode mode;
     private SecurityListeners securityListeners;
     private SecurityFreezeListener securityFreezeListener;
+<<<<<<< ours
+=======
+    private TrustedDeviceService trustedDeviceService;
+>>>>>>> theirs
     private Metrics metrics;
     private int activeMetricsId = -1;
 
@@ -73,7 +80,7 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
         pc.setTabCompleter(command);
 
         // слушатели безопасности
-        this.securityListeners = new SecurityListeners(this, userRepository, sessionService, messages);
+        this.securityListeners = new SecurityListeners(this, userRepository, sessionService, trustedDeviceService, messages);
         Bukkit.getPluginManager().registerEvents(securityListeners, this);
         this.securityFreezeListener = new SecurityFreezeListener(this, tgLinks, telegramSessions, messages);
         Bukkit.getPluginManager().registerEvents(securityFreezeListener, this);
@@ -114,6 +121,8 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
         this.tgLinks = new TelegramLinkRepository(dataSource, getLogger());
         this.challenges = new ChallengeRepository(dataSource, getLogger());
         this.telegramSessions = new TelegramSessionRepository(dataSource, getLogger());
+        this.trustedDevicesRepository = new TrustedDeviceRepository(dataSource, getLogger());
+        this.trustedDevicesRepository.initSchema();
 
         // ключ шифрования: ENV -> config.yml -> PLAINTEXT
         String envVar = cfg.getString("security.secret_encryption_key_env", "TWOFA_MASTER_KEY");
@@ -136,6 +145,7 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
         // сервисы
         this.totpService = new TotpService(cfg);
         this.sessionService = new SessionService(cfg);
+        this.trustedDeviceService = new TrustedDeviceService(trustedDevicesRepository, cfg);
 
         if (this.command == null) {
             this.command = new TwoFACommand(
@@ -146,7 +156,8 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
                     crypto,
                     messages,
                     tgLinks,
-                    challenges
+                    challenges,
+                    trustedDeviceService
             );
         } else {
             this.command.rewire(
@@ -156,13 +167,14 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
                     crypto,
                     messages,
                     tgLinks,
-                    challenges
+                    challenges,
+                    trustedDeviceService
             );
         }
         this.command.reloadSettings();
 
         if (this.securityListeners != null) {
-            this.securityListeners.rewire(userRepository, sessionService);
+            this.securityListeners.rewire(userRepository, sessionService, trustedDeviceService);
             this.securityListeners.setMessages(messages);
             this.securityListeners.reloadSettings();
         }
@@ -298,5 +310,6 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
     public TelegramLinkRepository getTelegramLinks() { return tgLinks; }
     public ChallengeRepository getChallenges() { return challenges; }
     public TelegramSessionRepository getTelegramSessions() { return telegramSessions; }
+    public TrustedDeviceService getTrustedDeviceService() { return trustedDeviceService; }
     public TwoFAMode getMode() { return mode; }
 }

@@ -27,6 +27,9 @@ security:
     digits: 6
     period_seconds: 30
     window_steps: 1 # принимать коды со сдвигом -1..+1 шага
+  trusted_devices:
+    enabled: true
+    expire_days: 30 # сколько дней доверять устройству с тем же IP/языком/платформой
   policy:
     required_permission: blockera.twofa.required # у кого 2FA обязателен
     cooldown:

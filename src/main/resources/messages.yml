@@ -27,6 +27,9 @@ need-setup-first: "{prefix}&cСначала выполните /2fa setup."
 confirm-ok: "{prefix}&aУспех! 2FA подтверждена."
 confirm-bad: "{prefix}&cНеверный код. Проверьте время на устройстве."
 
+trusted:
+  remembered: "{prefix}&7Устройство запомнено на {days} дн."
+
 status: "{prefix}&fВключено: &a%s&f, подтверждено в сессии: &a%s"
 
 usage-disable: "{prefix}&7Для отключения: &f/2fa disable <код>"

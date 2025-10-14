@@ -11,6 +11,7 @@ import org.bukkit.plugin.Plugin;
 import space.blockera.twofa.session.SessionService;
 import space.blockera.twofa.storage.UserRepository;
 import space.blockera.twofa.i18n.Messages;
+import space.blockera.twofa.session.TrustedDeviceService;
 
 import java.util.Set;
 import java.util.UUID;
@@ -23,6 +24,7 @@ public class SecurityListeners implements Listener {
     private UserRepository repo;
     private SessionService sessions;
     private Messages messages;
+    private TrustedDeviceService trustedDevices;
     private String requiredPerm;
     private Set<String> allowedWhenPending;
     private float freezeWalkSpeed;
@@ -35,19 +37,21 @@ public class SecurityListeners implements Listener {
     private boolean unlockCollidable;
     private String confirmPlaceholder;
 
-    public SecurityListeners(Plugin plugin, UserRepository repo, SessionService sessions, Messages messages) {
+    public SecurityListeners(Plugin plugin, UserRepository repo, SessionService sessions, TrustedDeviceService trustedDevices, Messages messages) {
         this.plugin = plugin;
         this.repo = repo;
         this.sessions = sessions;
+        this.trustedDevices = trustedDevices;
         this.messages = messages;
         reloadSettings();
     }
 
     public void setMessages(Messages messages) { this.messages = messages; }
 
-    public void rewire(UserRepository repo, SessionService sessions) {
+    public void rewire(UserRepository repo, SessionService sessions, TrustedDeviceService trustedDevices) {
         this.repo = repo;
         this.sessions = sessions;
+        this.trustedDevices = trustedDevices;
     }
 
     public void reloadSettings() {
@@ -89,6 +93,11 @@ public class SecurityListeners implements Listener {
         boolean must = p.hasPermission(requiredPerm);
         boolean enabled = repo.isEnabled(u);
         if (!must || !enabled) {
+            return;
+        }
+
+        if (trustedDevices != null && trustedDevices.isTrusted(p)) {
+            sessions.markTrusted(u);
             return;
         }
 

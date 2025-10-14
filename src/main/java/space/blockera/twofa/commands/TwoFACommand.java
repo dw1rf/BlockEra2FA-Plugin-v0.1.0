@@ -14,6 +14,7 @@ import space.blockera.twofa.BlockEraTwoFAPlugin;
 import space.blockera.twofa.i18n.Messages;
 import space.blockera.twofa.security.CryptoUtil;
 import space.blockera.twofa.session.SessionService;
+import space.blockera.twofa.session.TrustedDeviceService;
 import space.blockera.twofa.storage.UserRepository;
 import space.blockera.twofa.totp.TotpService;
 import space.blockera.twofa.storage.ChallengeRepository;
@@ -32,6 +33,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
     private Messages messages;
     private TelegramLinkRepository tgLinks;
     private ChallengeRepository challenges;
+    private TrustedDeviceService trustedDevices;
     private List<String> setupAliases = List.of("setup");
     private List<String> confirmAliases = List.of("confirm");
     private List<String> statusAliases = List.of("status");
@@ -49,7 +51,8 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                         CryptoUtil crypto,
                         Messages msg,
                         TelegramLinkRepository tgLinks,
-                        ChallengeRepository challenges) {
+                        ChallengeRepository challenges,
+                        TrustedDeviceService trustedDevices) {
         this.plugin = plugin;
         this.repo = repo;
         this.totp = totp;
@@ -58,6 +61,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
         this.messages = msg;
         this.tgLinks = tgLinks;
         this.challenges = challenges;
+        this.trustedDevices = trustedDevices;
         reloadSettings();
     }
 
@@ -67,7 +71,8 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                        CryptoUtil crypto,
                        Messages msg,
                        TelegramLinkRepository tgLinks,
-                       ChallengeRepository challenges) {
+                       ChallengeRepository challenges,
+                       TrustedDeviceService trustedDevices) {
         this.repo = repo;
         this.totp = totp;
         this.sessions = sessions;
@@ -75,6 +80,7 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
         this.messages = msg;
         this.tgLinks = tgLinks;
         this.challenges = challenges;
+        this.trustedDevices = trustedDevices;
     }
 
     public void reloadSettings() {
@@ -155,7 +161,8 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                         main.reloadCore();
                         rewire(main.getUserRepository(), main.getTotpService(), main.getSessionService(),
                                 main.getCrypto(), main.getMessages(),
-                                main.getTelegramLinks(), main.getChallenges());
+                                main.getTelegramLinks(), main.getChallenges(),
+                                main.getTrustedDeviceService());
                         sender.sendMessage(messages.msg("reloaded"));
                     } catch (Exception ex) {
                         sender.sendMessage(prefix + "Ошибка при перезагрузке: " + ex.getMessage());
@@ -259,7 +266,15 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                 if (totp.verifyCode(base32, args[1])) {
                     repo.setEnabled(p.getUniqueId(), true);
                     sessions.markVerified(p.getUniqueId(), SessionService.currentIp(p));
+                    if (trustedDevices != null) {
+                        trustedDevices.remember(p);
+                    }
                     p.sendMessage(messages.msg("confirm-ok"));
+                    if (trustedDevices != null && trustedDevices.isEnabled()) {
+                        Map<String, String> vars = basePlaceholders();
+                        vars.put("days", Long.toString(Math.max(1L, trustedDevices.ttlDays())));
+                        messages.send(p, "trusted.remembered", vars);
+                    }
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         Player pl = Bukkit.getPlayer(p.getUniqueId());
                         if (pl != null) {
@@ -292,6 +307,9 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                 String base32 = crypto.reveal(enc.get());
                 if (totp.verifyCode(base32, args[1])) {
                     repo.upsertSecret(p.getUniqueId(), null, false);
+                    if (trustedDevices != null) {
+                        trustedDevices.forget(p.getUniqueId());
+                    }
                     p.sendMessage(messages.msg("disabled"));
                 } else {
                     p.sendMessage(messages.msg("disable-bad"));
@@ -317,6 +335,12 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
 
                 repo.upsertSecret(target.getUniqueId(), null, false);
                 sessions.clear(target.getUniqueId());
+<<<<<<< ours
+=======
+                if (trustedDevices != null) {
+                    trustedDevices.forget(target.getUniqueId());
+                }
+>>>>>>> theirs
 
                 String resolvedName = target.getName() != null ? target.getName() : targetName;
                 Map<String, String> vars = basePlaceholders();

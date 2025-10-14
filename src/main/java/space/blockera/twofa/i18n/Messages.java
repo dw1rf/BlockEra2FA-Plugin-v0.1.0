@@ -41,7 +41,11 @@ public class Messages {
         return new String[] {
                 "prefix","help","no-perm","reloaded","only-ingame",
                 "setup-created","qr-link","otpauth-copy","after-setup",
+<<<<<<< ours
                 "usage-confirm","need-setup-first","confirm-ok","confirm-bad",
+=======
+                "usage-confirm","need-setup-first","confirm-ok","confirm-bad","trusted.remembered",
+>>>>>>> theirs
                 "status","usage-disable","usage-force-disable","not-setup",
                 "disabled","disable-bad","force-disabled","force-disabled-player",
                 "force-disable-not-found",
@@ -77,6 +81,7 @@ public class Messages {
             case "need-setup-first" -> "&eСначала выполните /2fa setup.";
             case "confirm-ok" -> "&aУспех! 2FA подтверждена.";
             case "confirm-bad" -> "&cНеверный код. Проверьте время на устройстве.";
+            case "trusted.remembered" -> "{prefix}&7Устройство запомнено на {days} дн.";
             case "status" -> "&7Включено: &f%s&7, подтверждено в сессии: &f%s";
             case "usage-disable" -> "&eДля отключения: /2fa disable <код>";
             case "usage-force-disable" -> "{prefix}&7Для отключения игроку: &f/2fa {force_disable} <ник>";
