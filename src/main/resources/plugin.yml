@@ -3,6 +3,7 @@ main: space.blockera.twofa.BlockEraTwoFAPlugin
 version: "${version}"
 description: "TOTP 2FA для Paper 1.21.x"
 api-version: "1.21"
+folia-supported: false
 authors: ["BlockEra"]
 commands:
   2fa:

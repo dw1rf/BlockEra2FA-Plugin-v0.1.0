@@ -20,10 +20,11 @@ maven("https://repo.papermc.io/repository/maven-public/")
 
 
 dependencies {
-compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
-implementation("io.github.cdimascio:dotenv-java:3.0.0")
-implementation("com.zaxxer:HikariCP:5.1.0")
-implementation("commons-codec:commons-codec:1.16.1")
+    compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
+    implementation("io.github.cdimascio:dotenv-java:3.0.0")
+    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("commons-codec:commons-codec:1.16.1")
+    implementation("org.bstats:bstats-bukkit:3.0.2")
 
 }
 
@@ -39,8 +40,7 @@ expand(
 
 
 tasks.shadowJar {
-archiveClassifier.set("")
-// при желании можно relocate зависимости
+    archiveClassifier.set("")
 }
 
 

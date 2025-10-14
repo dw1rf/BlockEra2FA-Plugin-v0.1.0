@@ -1,11 +1,13 @@
 package space.blockera.twofa;
-import space.blockera.twofa.TwoFAMode;
 
+import space.blockera.twofa.TwoFAMode;
 import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bstats.bukkit.Metrics;
 
 import space.blockera.twofa.commands.TwoFACommand;
 import space.blockera.twofa.i18n.Messages;
@@ -24,7 +26,13 @@ import space.blockera.twofa.totp.TotpService;
 import space.blockera.twofa.storage.OnlineRepository;
 import space.blockera.twofa.listeners.OnlineListeners;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.logging.Level;
 
 public class BlockEraTwoFAPlugin extends JavaPlugin {
 
@@ -41,12 +49,16 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
     private TwoFAMode mode;
     private SecurityListeners securityListeners;
     private SecurityFreezeListener securityFreezeListener;
+    private Metrics metrics;
+    private int activeMetricsId = -1;
 
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         saveResource("messages.yml", false);
+        mergeResourceDefaults("config.yml");
+        mergeResourceDefaults("messages.yml");
 
         reloadCore();
 
@@ -79,12 +91,16 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         if (dataSource != null) dataSource.close();
+        shutdownMetrics();
     }
 
     /** Переинициализация всего (вызывается из /2fa reload). */
     public void reloadCore() {
+        mergeResourceDefaults("config.yml");
         reloadConfig();
         FileConfiguration cfg = getConfig();
+
+        mergeResourceDefaults("messages.yml");
 
         // messages.yml
         this.messages = new Messages(this);
@@ -158,6 +174,8 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
 
         // создать таблицы онлайна/очереди, если их ещё нет
         initOnlineSchema();
+
+        configureMetrics(cfg);
     }
 
     // ===== helpers =====
@@ -200,6 +218,75 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
         } catch (Exception e) {
             getLogger().warning("Не удалось создать таблицы онлайна: " + e.getMessage());
         }
+    }
+
+    private void mergeResourceDefaults(String resourcePath) {
+        File file = new File(getDataFolder(), resourcePath);
+        if (!file.exists()) {
+            saveResource(resourcePath, false);
+            return;
+        }
+
+        try (InputStream defaultsStream = getResource(resourcePath)) {
+            if (defaultsStream == null) {
+                return;
+            }
+
+            try (InputStreamReader reader = new InputStreamReader(defaultsStream, StandardCharsets.UTF_8)) {
+                YamlConfiguration defaults = YamlConfiguration.loadConfiguration(reader);
+                YamlConfiguration existing = YamlConfiguration.loadConfiguration(file);
+
+                boolean changed = false;
+                for (String key : defaults.getKeys(true)) {
+                    if (!existing.contains(key)) {
+                        existing.set(key, defaults.get(key));
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    try {
+                        existing.save(file);
+                    } catch (IOException ex) {
+                        getLogger().log(Level.WARNING, "Не удалось обновить " + resourcePath + " новыми значениями", ex);
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            getLogger().log(Level.WARNING, "Не удалось прочитать ресурс " + resourcePath, ex);
+        }
+    }
+
+    private void configureMetrics(FileConfiguration cfg) {
+        boolean enabled = cfg.getBoolean("telemetry.bstats.enabled", true);
+        int pluginId = cfg.getInt("telemetry.bstats.plugin_id", -1);
+
+        if (!enabled || pluginId <= 0) {
+            shutdownMetrics();
+            return;
+        }
+
+        if (metrics != null && activeMetricsId != pluginId) {
+            shutdownMetrics();
+        }
+
+        if (metrics == null) {
+            metrics = new Metrics(this, pluginId);
+            activeMetricsId = pluginId;
+        }
+    }
+
+    private void shutdownMetrics() {
+        if (metrics == null) {
+            return;
+        }
+        try {
+            metrics.shutdown();
+        } catch (NoSuchMethodError ignored) {
+            // bStats < 3.0.2 не поддерживает shutdown
+        }
+        metrics = null;
+        activeMetricsId = -1;
     }
 
     // геттеры
