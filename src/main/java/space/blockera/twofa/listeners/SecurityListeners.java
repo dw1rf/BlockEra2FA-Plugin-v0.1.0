@@ -2,12 +2,14 @@ package space.blockera.twofa.listeners;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.*;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import space.blockera.twofa.session.SessionService;
 import space.blockera.twofa.storage.UserRepository;
 import space.blockera.twofa.i18n.Messages;
@@ -36,6 +38,12 @@ public class SecurityListeners implements Listener {
     private boolean unlockInvulnerable;
     private boolean unlockCollidable;
     private String confirmPlaceholder;
+    private PotionEffectType freezeEffectType;
+    private int freezeEffectAmplifier;
+    private boolean freezeEffectAmbient;
+    private boolean freezeEffectParticles;
+    private boolean freezeEffectIcon;
+    private int freezeEffectDurationTicks;
 
     public SecurityListeners(Plugin plugin, UserRepository repo, SessionService sessions, TrustedDeviceService trustedDevices, Messages messages) {
         this.plugin = plugin;
@@ -75,6 +83,9 @@ public class SecurityListeners implements Listener {
         this.unlockInvulnerable = plugin.getConfig().getBoolean("ui.unlock.invulnerable", false);
         this.unlockCollidable = plugin.getConfig().getBoolean("ui.unlock.collidable", true);
 
+        PotionEffectType previousEffect = this.freezeEffectType;
+        resolveFreezeEffect();
+
         String confirmAlias = "confirm";
         var confirmList = plugin.getConfig().getStringList("commands.confirm");
         for (String alias : confirmList) {
@@ -84,6 +95,19 @@ public class SecurityListeners implements Listener {
             }
         }
         this.confirmPlaceholder = "/2fa " + confirmAlias + " <код>";
+
+        if (plugin.isEnabled()) {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    if (previousEffect != null && previousEffect != freezeEffectType) {
+                        online.removePotionEffect(previousEffect);
+                    }
+                    if (isLocked(online)) {
+                        freeze(online);
+                    }
+                }
+            });
+        }
     }
 
     @EventHandler
@@ -125,6 +149,7 @@ public class SecurityListeners implements Listener {
         p.setFlySpeed(freezeFlySpeed);
         p.setInvulnerable(freezeInvulnerable);
         p.setCollidable(freezeCollidable);
+        applyFreezeEffect(p);
     }
 
     private void unfreeze(Player p) {
@@ -132,6 +157,7 @@ public class SecurityListeners implements Listener {
         p.setFlySpeed(unlockFlySpeed);
         p.setInvulnerable(unlockInvulnerable);
         p.setCollidable(unlockCollidable);
+        clearFreezeEffect(p);
     }
 
     @EventHandler
@@ -182,4 +208,44 @@ public class SecurityListeners implements Listener {
     }
 
     public void onVerified(Player p) { unfreeze(p); }
+
+    private void resolveFreezeEffect() {
+        String typeName = plugin.getConfig().getString("ui.freeze.effect.type", "BLINDNESS");
+        PotionEffectType resolved = null;
+        if (typeName != null && !typeName.equalsIgnoreCase("none") && !typeName.isBlank()) {
+            resolved = PotionEffectType.getByName(typeName.trim().toUpperCase(Locale.ROOT));
+            if (resolved == null) {
+                plugin.getLogger().warning("Неизвестный эффект зелья: " + typeName + ". Эффект заморозки отключён.");
+            }
+        }
+        this.freezeEffectType = resolved;
+        this.freezeEffectAmplifier = Math.max(0, plugin.getConfig().getInt("ui.freeze.effect.amplifier", 0));
+        int configuredDuration = plugin.getConfig().getInt("ui.freeze.effect.duration_ticks", Integer.MAX_VALUE);
+        this.freezeEffectDurationTicks = configuredDuration > 0 ? configuredDuration : Integer.MAX_VALUE;
+        this.freezeEffectAmbient = plugin.getConfig().getBoolean("ui.freeze.effect.ambient", false);
+        this.freezeEffectParticles = plugin.getConfig().getBoolean("ui.freeze.effect.particles", false);
+        this.freezeEffectIcon = plugin.getConfig().getBoolean("ui.freeze.effect.icon", true);
+    }
+
+    private void applyFreezeEffect(Player player) {
+        if (freezeEffectType == null) {
+            return;
+        }
+        PotionEffect effect = new PotionEffect(
+                freezeEffectType,
+                freezeEffectDurationTicks,
+                freezeEffectAmplifier,
+                freezeEffectAmbient,
+                freezeEffectParticles,
+                freezeEffectIcon
+        );
+        player.addPotionEffect(effect, true);
+    }
+
+    private void clearFreezeEffect(Player player) {
+        if (freezeEffectType == null) {
+            return;
+        }
+        player.removePotionEffect(freezeEffectType);
+    }
 }

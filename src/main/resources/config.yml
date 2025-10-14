@@ -70,6 +70,13 @@ ui:
     fly_speed: 0.0
     invulnerable: true
     collidable: false
+    effect:
+      type: BLINDNESS   # используйте NONE, чтобы отключить эффект
+      amplifier: 0
+      duration_ticks: 2147483647
+      ambient: false
+      particles: false
+      icon: true
   unlock:
     walk_speed: 0.2
     fly_speed: 0.1
@@ -91,16 +98,6 @@ commands:
   telegram_link: ["link"]
   telegram_status: ["tgstatus"]
   telegram_unlink: ["unlinktelegram"]
-
-# =============================
-# 📊 TELEMETRY
-# -----------------------------
-# bStats собирает анонимную статистику. Отключите, если не хотите делиться данными.
-# =============================
-telemetry:
-  bstats:
-    enabled: true
-    plugin_id: 22853  # замените на ID вашего плагина на bStats
 
 # =============================
 # 🤖 TELEGRAM AUTH

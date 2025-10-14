@@ -19,6 +19,7 @@ import space.blockera.twofa.storage.UserRepository;
 import space.blockera.twofa.totp.TotpService;
 import space.blockera.twofa.storage.ChallengeRepository;
 import space.blockera.twofa.storage.TelegramLinkRepository;
+import space.blockera.twofa.listeners.SecurityListeners;
 
 import java.time.Instant;
 import java.util.*;
@@ -278,6 +279,13 @@ public class TwoFACommand implements CommandExecutor, TabCompleter {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         Player pl = Bukkit.getPlayer(p.getUniqueId());
                         if (pl != null) {
+                            if (plugin instanceof BlockEraTwoFAPlugin twoFAPlugin) {
+                                SecurityListeners listeners = twoFAPlugin.getSecurityListeners();
+                                if (listeners != null) {
+                                    listeners.onVerified(pl);
+                                    return;
+                                }
+                            }
                             var cfg = plugin.getConfig();
                             pl.setWalkSpeed((float) cfg.getDouble("ui.unlock.walk_speed", 0.2));
                             pl.setFlySpeed((float) cfg.getDouble("ui.unlock.fly_speed", 0.1));

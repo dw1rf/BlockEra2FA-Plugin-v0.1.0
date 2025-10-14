@@ -24,7 +24,6 @@ dependencies {
     implementation("io.github.cdimascio:dotenv-java:3.0.0")
     implementation("com.zaxxer:HikariCP:5.1.0")
     implementation("commons-codec:commons-codec:1.16.1")
-    implementation("org.bstats:bstats-bukkit:3.0.2")
     implementation("com.mysql:mysql-connector-j:8.4.0")
 
 }

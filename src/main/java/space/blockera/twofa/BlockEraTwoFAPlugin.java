@@ -7,7 +7,6 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bstats.bukkit.Metrics;
 
 import space.blockera.twofa.commands.TwoFACommand;
 import space.blockera.twofa.i18n.Messages;
@@ -53,9 +52,6 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
     private SecurityListeners securityListeners;
     private SecurityFreezeListener securityFreezeListener;
     private TrustedDeviceService trustedDeviceService;
-    private Metrics metrics;
-    private int activeMetricsId = -1;
-
 
     @Override
     public void onEnable() {
@@ -95,7 +91,6 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         if (dataSource != null) dataSource.close();
-        shutdownMetrics();
     }
 
     /** Переинициализация всего (вызывается из /2fa reload). */
@@ -184,7 +179,6 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
         // создать таблицы онлайна/очереди, если их ещё нет
         initOnlineSchema();
 
-        configureMetrics(cfg);
     }
 
     // ===== helpers =====
@@ -266,38 +260,6 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
         }
     }
 
-    private void configureMetrics(FileConfiguration cfg) {
-        boolean enabled = cfg.getBoolean("telemetry.bstats.enabled", true);
-        int pluginId = cfg.getInt("telemetry.bstats.plugin_id", -1);
-
-        if (!enabled || pluginId <= 0) {
-            shutdownMetrics();
-            return;
-        }
-
-        if (metrics != null && activeMetricsId != pluginId) {
-            shutdownMetrics();
-        }
-
-        if (metrics == null) {
-            metrics = new Metrics(this, pluginId);
-            activeMetricsId = pluginId;
-        }
-    }
-
-    private void shutdownMetrics() {
-        if (metrics == null) {
-            return;
-        }
-        try {
-            metrics.shutdown();
-        } catch (NoSuchMethodError ignored) {
-            // bStats < 3.0.2 не поддерживает shutdown
-        }
-        metrics = null;
-        activeMetricsId = -1;
-    }
-
     // геттеры
     public UserRepository getUserRepository() { return userRepository; }
     public SessionService getSessionService() { return sessionService; }
@@ -309,4 +271,5 @@ public class BlockEraTwoFAPlugin extends JavaPlugin {
     public TelegramSessionRepository getTelegramSessions() { return telegramSessions; }
     public TrustedDeviceService getTrustedDeviceService() { return trustedDeviceService; }
     public TwoFAMode getMode() { return mode; }
+    public SecurityListeners getSecurityListeners() { return securityListeners; }
 }
